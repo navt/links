@@ -7,13 +7,15 @@ use kit\memory\SessionMemory;
 class Workers extends CI_Controller
 {
     private $user;
-    
+    private $queryRes;
+
+
     public function __construct() {
-            parent::__construct();
-            $this->load->model('workers_model');
-            $this->load->helper('form');
-            $memory = new SessionMemory();
-            $this->user = new Users($memory);
+        parent::__construct();
+        $this->load->model('workers_model');
+        $this->load->helper('form');
+        $memory = new SessionMemory();
+        $this->user = new Users($memory);
     }
 
     public function index()	
@@ -22,52 +24,58 @@ class Workers extends CI_Controller
         $get = $this->input->get(null, true);
         $_GET = null;
         if ($get === []) {
-                if ($this->user->loginFact()) {
-                        // если уже есть факт авторизации, то редирект
-                        redirect('/links/');
+            if ($this->user->loginFact()) {
+                // если уже есть факт авторизации, то редирект
+                redirect('/links/');
+            } else {
+                // смотрим, есть ли куки
+                $cookie = $this->input->cookie('user');
+                if ($cookie !== null) {
+                    $this->cookieAuth($cookie);
                 } else {
-                        // иначе, показываем форму авторизации
-                        $this->viewForm();
+                    // иначе, показываем форму авторизации
+                    $this->viewForm();
                 }
+            }
         } elseif ($get['submit'] === 'Вход') {
-                $this->session->err_msg = '';
-                $userName = trim($get['userName']);
-                $passWord = trim($get['passWord']);
+            $this->session->err_msg = '';
+            $userName = trim($get['userName']);
+            $passWord = trim($get['passWord']);
 
-                $this->session->userName = $userName;
-                $this->session->passWord = $passWord;
+            $this->session->userName = $userName;
+            $this->session->passWord = $passWord;
 
-                $error = emailValidate($userName, true);
-                if ($error != false) {
-                    $this->session->err_msg = "Логин не прошёл проверки - {$error} ".__METHOD__;
-                    refresh('/workers/viewForm/', 1);
-                }
-                $filter ='~^[a-zA-Z0-9_-]+$~u';
-                $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
-                if ($flag === false) {
-                    $this->session->err_msg = 'В пароле использован неверный набор символов . '.__METHOD__;
-                    refresh('/workers/', 1);
-                }
-                // если всё прошло, то запрос к БД
-                $queryRes = $this->workers_model->workersData($userName);
+            $error = emailValidate($userName, true);
+            if ($error != false) {
+                $this->session->err_msg = "Логин не прошёл проверки - {$error} ".__METHOD__;
+                refresh('/workers/viewForm/', 1);
+            }
+            $filter ='~^[a-zA-Z0-9_-]+$~u';
+            $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
+            if ($flag === false) {
+                $this->session->err_msg = 'В пароле использован неверный набор символов . '.__METHOD__;
+                refresh('/workers/', 1);
+            }
+            // если всё прошло, то запрос к БД
+            $this->queryRes = $this->workers_model->workersData('email', $userName);
 
-                if ($queryRes === false) {
-                    $this->session->err_msg = "Не нашлось пары # 1 {$userName} / {$passWord} в БД. ".__METHOD__;
-                    refresh('/workers/', 2);
+            if ($this->queryRes === false) {
+                $this->session->err_msg = "Не нашлось пары # 1 {$userName} / {$passWord} в БД. ".__METHOD__;
+                refresh('/workers/', 2);
+            } else {
+                $hash = genHash($userName, $passWord);
+                if ($hash === $this->queryRes['hash']) {
+                    // логиним этого пользователя
+                    if (isset($get['remember']) && $get['remember'] === 'yes') {
+                        $remember = true;
+                    } else $remember = false;
+                    $this->login($remember);
+                    redirect('/links/');
                 } else {
-                    $hash = genHash($userName, $passWord);
-                    if ($hash === $queryRes['hash']) {
-                        // логиним этого пользователя
-                        $this->user->saveItems($queryRes);
-                        $this->session->userName = null;
-                        $this->session->passWord = null;
-                        redirect('/links/');
-
-                    } else {
-                        $this->session->err_msg = "Не нашлось такой пары # 2 {$userName} / {$passWord} в БД. ".__METHOD__;
-                        refresh('/workers/viewForm/', 2);
-                    }
+                    $this->session->err_msg = "Не нашлось такой пары # 2 {$userName} / {$passWord} в БД. ".__METHOD__;
+                    refresh('/workers/viewForm/', 2);
                 }
+            }
         }
 
     }
@@ -76,12 +84,48 @@ class Workers extends CI_Controller
     {
         $this->load->view('workers/login');
     }
-
+    
+    public function login($remember) {
+        $this->user->saveItems($this->queryRes);
+        // если есть чекбокс Запомнить меня - пишем куки
+        if ($remember === true) {
+            $this->input->set_cookie('user', $this->queryRes['id'].'|'.$this->queryRes['mix'], 604800);
+        }
+        $this->session->userName = null;
+        $this->session->passWord = null;
+        return $this;
+    }
+    
+    public function cookieAuth($cookie) {
+        // запрос модели на предмет наличия юзера с соответствующим id
+        list($id, $mix) = explode('|', $cookie);
+        $this->queryRes = $this->workers_model->workersData('id', $id);
+        if ($this->queryRes === false) {
+            // нет такого пользователя - стираем куки, показываем форму авторизации
+            $this->input->set_cookie('user', '', 0);
+            $this->viewForm();
+        } else {
+            // юзер есть в БД - проверяем md5(микст) на соответствие 
+            if ($this->queryRes['mix'] === $mix) {
+                // md5() совпал - логиним этого пользователя
+                $this->user->saveItems($this->queryRes);
+                $this->session->userName = null;
+                $this->session->passWord = null;
+                redirect('/links/');
+            } else {
+                // не совпало - стираем куки, показываем форму авторизации
+                $this->input->set_cookie('user', '', 0);
+                $this->viewForm();
+            }
+        }    
+    }
+    
     public function deleteAuth()
     {
         $this->user->clear();
         $this->session->userName = null;
         $this->session->passWord = null;
+        $this->input->set_cookie('user', '', 0);
         redirect('/workers/index/');
     }
     public function generate($userName, $passWord)

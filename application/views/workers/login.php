@@ -31,8 +31,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         $attributes = ["method" => "GET"];
         echo form_open('workers/index', $attributes);
         ?>
-            <input type="text" name="userName" placeholder="логин" value="<?php echo $userName; ?>" required>
-            <input type="" name="passWord" placeholder="пароль" value="<?php echo $passWord; ?>" required>
+            <input class="login" type="text" name="userName" placeholder="логин" value="<?php echo $userName; ?>" required><br>
+            <input class="login" type="" name="passWord" placeholder="пароль" value="<?php echo $passWord; ?>" required><br>
+            <input class="login" type="checkbox" name="remember" value="yes"> Запомнить меня<br> 
             <input type="hidden" name="<?php echo $csrf['name'];?>" value="<?php echo $csrf['hash'];?>" />
 	<?php
         echo form_submit("submit", "Вход");
