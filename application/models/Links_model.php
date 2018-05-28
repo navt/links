@@ -3,42 +3,44 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Links_model extends CI_Model
 {
+    private $table;  // полное имя таблицы
+    
+    public function __construct() {
+        parent::__construct();
+        $this->table = $this->config->item('t_prefix').'links';
+    }
     public function qLinks()
     {
-        // имя таблицы
-        $t = $this->config->item('t_prefix').'links';
-        $q = "SELECT COUNT(*) FROM `{$t}`";
+        $q = "SELECT COUNT(*) FROM `{$this->table}`";
         $query = $this->db->query($q);
         $queryRes = $query->result_array();
-        //var_dump($queryRes);
         return $queryRes[0]["COUNT(*)"];
     }
     public function getLink()
     {
-        // имя таблицы
-        $t = $this->config->item('t_prefix').'links';
-        $q = "SELECT * FROM `{$t}` LIMIT 1";
+        $q = "SELECT * FROM `{$this->table}` LIMIT 1";
         $query = $this->db->query($q);
         if ($query->num_rows() > 0){
-            $queryRes = [];
-            $queryRes = $query->result_array();
-            $queryRes = $queryRes[0];
-        } else $queryRes = false;
+            $qr = $query->result_array();
+            $queryRes = $qr[0];
+        } else {
+            $queryRes = false;
+        }
         return $queryRes;
     }
     public function deleteLink($id='')
     {
-        $t = $this->config->item('t_prefix').'links';
-        $q = "DELETE FROM `{$t}` WHERE `id` = {$id}";
-        $query = $this->db->query($q);
+        $q = "DELETE FROM `{$this->table}` WHERE `id` = {$id}";
+        $qr = $this->db->query($q);
+        return $qr;
     }
     public function addLink($link='')
     {
-        $t = $this->config->item('t_prefix').'links';
         $ct = date('Y-m-d H:i:s');
-        $q = "INSERT INTO `{$t}` (`id`, `link`, `addition_date`) VALUES (NULL, '{$link}',
+        $q = "INSERT INTO `{$this->table}` (`id`, `link`, `addition_date`) VALUES (NULL, '{$link}',
                 '{$ct}')";
-        $query = $this->db->query($q);
+        $qr = $this->db->query($q);
+        return $qr;
     }
 
 }
