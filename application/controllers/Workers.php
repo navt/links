@@ -22,7 +22,7 @@ class Workers extends CI_Controller
     {
         $get =[];
         $get = $this->input->get(null, true);
-        $_GET = null;
+        $_GET = [];
         if ($get === []) {
             if ($this->user->loginFact()) {
                 // если уже есть факт авторизации, то редирект
@@ -77,7 +77,6 @@ class Workers extends CI_Controller
                 }
             }
         }
-
     }
 
     public function viewForm()
@@ -85,7 +84,7 @@ class Workers extends CI_Controller
         $this->load->view('workers/login');
     }
     
-    public function login($remember) {
+    private function login($remember) {
         $this->user->saveItems($this->queryRes);
         // если есть чекбокс Запомнить меня - пишем куки
         if ($remember === true) {
@@ -96,14 +95,16 @@ class Workers extends CI_Controller
         return $this;
     }
     
-    public function cookieAuth($cookie) {
+    private function cookieAuth($cookie) {
         // запрос модели на предмет наличия юзера с соответствующим id
         list($id, $mix) = explode('|', $cookie);
+        if (!is_numeric($id)) {
+            $this->deleteCookie();
+        }
         $this->queryRes = $this->workers_model->workersData('id', $id);
         if ($this->queryRes === false) {
             // нет такого пользователя - стираем куки, показываем форму авторизации
-            $this->input->set_cookie('user', '', 0);
-            $this->viewForm();
+            $this->deleteCookie();
         } else {
             // юзер есть в БД - проверяем md5(микст) на соответствие 
             if ($this->queryRes['mix'] === $mix) {
@@ -113,11 +114,15 @@ class Workers extends CI_Controller
                 $this->session->passWord = null;
                 redirect('/links/');
             } else {
-                // не совпало - стираем куки, показываем форму авторизации
-                $this->input->set_cookie('user', '', 0);
-                $this->viewForm();
+                // mix не совпал - стираем куки, показываем форму авторизации
+                $this->deleteCookie(); 
             }
         }    
+    }
+    
+    private function deleteCookie() {
+        $this->input->set_cookie('user', '', 0);
+        $this->viewForm(); 
     }
     
     public function deleteAuth()
