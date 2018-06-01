@@ -100,29 +100,30 @@ class Workers extends CI_Controller
         list($id, $mix) = explode('|', $cookie);
         if (!is_numeric($id)) {
             $this->deleteCookie();
-        }
-        $this->queryRes = $this->workers_model->workersData('id', $id);
-        if ($this->queryRes === false) {
-            // нет такого пользователя - стираем куки, показываем форму авторизации
-            $this->deleteCookie();
         } else {
-            // юзер есть в БД - проверяем md5(микст) на соответствие 
-            if ($this->queryRes['mix'] === $mix) {
-                // md5() совпал - логиним этого пользователя
-                $this->user->saveItems($this->queryRes);
-                $this->session->userName = null;
-                $this->session->passWord = null;
-                redirect('/links/');
+            $this->queryRes = $this->workers_model->workersData('id', $id);
+            if ($this->queryRes === false) {
+                // нет такого пользователя - стираем куки, показываем форму авторизации
+                $this->deleteCookie();
             } else {
-                // mix не совпал - стираем куки, показываем форму авторизации
-                $this->deleteCookie(); 
+                // юзер есть в БД - проверяем md5(микст) на соответствие 
+                if ($this->queryRes['mix'] === $mix) {
+                    // md5() совпал - логиним этого пользователя
+                    $this->user->saveItems($this->queryRes);
+                    $this->session->userName = null;
+                    $this->session->passWord = null;
+                    redirect('/links/');
+                } else {
+                    // mix не совпал - стираем куки, показываем форму авторизации
+                    $this->deleteCookie(); 
+                }
             }
-        }    
+        }
     }
     
     private function deleteCookie() {
         $this->input->set_cookie('user', '', 0);
-        $this->viewForm(); 
+        $this->viewForm();
     }
     
     public function deleteAuth()
