@@ -8,8 +8,8 @@
 </head>
 <body>
     Имеется ссылок в БД &nbsp;  <span class="count"><?php echo $count; ?></span> |
-<a href='<?php echo site_url('links/showLink')?>'>Извлечь ссылку</a> |
-<a href='<?php echo site_url('links/addLinks')?>'>Добавить ссылки в БД</a> |
-<a href='<?php echo site_url('workers/deleteAuth')?>'>Выход</a>
+    <a href="<?php echo site_url('links/showLink')?>">Извлечь ссылку</a> |
+    <a href="<?php echo site_url('links/addLinks')?>">Добавить ссылки в БД</a> |
+    <a href="<?php echo site_url('workers/deleteAuth')?>">Выход</a>
 </body>
 </html>
