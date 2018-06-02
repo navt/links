@@ -60,7 +60,7 @@ class Workers extends CI_Controller
             $this->queryRes = $this->workers_model->workersData('email', $userName);
 
             if ($this->queryRes === false) {
-                $this->session->err_msg = "Не нашлось пары # 1 {$userName} / {$passWord} в БД. ".__METHOD__;
+                $this->session->err_msg = "Не нашлось пары (# 1) {$userName} / {$passWord} в БД. ".__METHOD__;
                 refresh('/workers/', 2);
             } else {
                 $hash = genHash($userName, $passWord);
@@ -68,11 +68,13 @@ class Workers extends CI_Controller
                     // логиним этого пользователя
                     if (isset($get['remember']) && $get['remember'] === 'yes') {
                         $remember = true;
-                    } else $remember = false;
+                    } else {
+                        $remember = false;
+                    }
                     $this->login($remember);
                     redirect('/links/');
                 } else {
-                    $this->session->err_msg = "Не нашлось такой пары # 2 {$userName} / {$passWord} в БД. ".__METHOD__;
+                    $this->session->err_msg = "Не нашлось пары (# 2) {$userName} / {$passWord} в БД. ".__METHOD__;
                     refresh('/workers/viewForm/', 2);
                 }
             }
@@ -86,51 +88,56 @@ class Workers extends CI_Controller
     
     private function login($remember) {
         $this->user->saveItems($this->queryRes);
-        // если есть чекбокс Запомнить меня - пишем куки
+        // если есть чекбокс Запомнить меня - пишем куки, текущее время жизни - неделя (604800)
         if ($remember === true) {
             $this->input->set_cookie('user', $this->queryRes['id'].'|'.$this->queryRes['mix'], 604800);
         }
-        $this->session->userName = null;
-        $this->session->passWord = null;
+        $this->deleteSessionVars();
         return $this;
     }
     
     private function cookieAuth($cookie) {
-        // запрос модели на предмет наличия юзера с соответствующим id
         list($id, $mix) = explode('|', $cookie);
-        if (!is_numeric($id)) {
-            $this->deleteCookie();
-        } else {
+        if (is_numeric($id)) {
+            // запрос модели на предмет наличия юзера с соответствующим id
             $this->queryRes = $this->workers_model->workersData('id', $id);
             if ($this->queryRes === false) {
                 // нет такого пользователя - стираем куки, показываем форму авторизации
                 $this->deleteCookie();
             } else {
-                // юзер есть в БД - проверяем md5(микст) на соответствие 
+                // если юзер есть в БД, то  проверяем md5(микст) на соответствие 
                 if ($this->queryRes['mix'] === $mix) {
                     // md5() совпал - логиним этого пользователя
                     $this->user->saveItems($this->queryRes);
-                    $this->session->userName = null;
-                    $this->session->passWord = null;
+                    $this->deleteSessionVars();
                     redirect('/links/');
                 } else {
                     // mix не совпал - стираем куки, показываем форму авторизации
                     $this->deleteCookie(); 
                 }
             }
+        } else {
+            $this->deleteCookie();
         }
     }
     
-    private function deleteCookie() {
+    private function deleteCookie() 
+    {
         $this->input->set_cookie('user', '', 0);
         $this->viewForm();
+    }
+    
+    private function deleteSessionVars() 
+    {
+        $this->session->userName = null;
+        $this->session->passWord = null;
+        return $this;
     }
     
     public function deleteAuth()
     {
         $this->user->clear();
-        $this->session->userName = null;
-        $this->session->passWord = null;
+        $this->deleteSessionVars();
         $this->input->set_cookie('user', '', 0);
         redirect('/workers/index/');
     }
