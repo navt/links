@@ -129,8 +129,7 @@ class Workers extends CI_Controller
     
     private function deleteSessionVars() 
     {
-        $this->session->userName = null;
-        $this->session->passWord = null;
+        deleteSI(['userName','passWord']);
         return $this;
     }
     

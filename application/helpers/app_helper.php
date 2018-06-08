@@ -7,12 +7,19 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 if ( ! function_exists('deleteSI')) {
     /*
-     * deleteSI стирает элемент массива $_SESSION, если тот существует
+     * deleteSI стирает элемент(ы) массива $_SESSION, если тот(они) существует
      */ 
-    function deleteSI($name='err_msg')
+    function deleteSI($items)
     {
-        if (isset($_SESSION[$name]) && $_SESSION[$name] !='') {
+        if (!is_array($items) && $items !== '') {
+            $itemsArray[] = $items;
+        } else {
+            $itemsArray = $items;
+        }
+        foreach ($itemsArray as $name) {
+            if (isset($_SESSION[$name]) && $_SESSION[$name] !='') {
                 $_SESSION[$name] = null;
+            } 
         }
     }
 

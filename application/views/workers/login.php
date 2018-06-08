@@ -11,7 +11,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <body>
 	<?php if (isset($_SESSION['err_msg']) && $this->session->err_msg !=''):?>
                 <div class="error">
-                    <?php echo $this->session->err_msg; deleteSI(); ?>
+                    <?php echo $this->session->err_msg; deleteSI('err_msg'); ?>
 		</div>
 	<?php endif;?>
 	<?php
