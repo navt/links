@@ -16,5 +16,12 @@ body {
 .login {
     margin-bottom: .9em; 
 }
-
-
+.sign a {
+    font-size: 1.6em; 
+    color: blue;
+    text-decoration: none;
+}
+.user {
+    float:left;
+    width: 25%;
+}

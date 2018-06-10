@@ -7,7 +7,8 @@ use kit\memory\SessionMemory;
 class Links extends CI_Controller
 {
     private $user;
-    
+    public  $data;
+
     public function __construct() 
     {
         parent::__construct();
@@ -20,29 +21,32 @@ class Links extends CI_Controller
 
     public function index()
     {
-        $data = [];
         $queryRes = $this->links_model->qLinks();
-        $data['count'] = $queryRes;
-        $this->load->view('links/menu', $data);
+        $this->data['title'] = 'Меню клиента/работника';
+        $this->data['count'] = $queryRes;
+        $this->data['isAdmin'] = $this->user->isAdmin();
+        $this->load->view('links/menu', $this->data);
     }
     public function showLink()
     {
-        $data = [];
         $queryRes = $this->links_model->getLink();
-        if ($queryRes === false) redirect('/links/');
+        if ($queryRes === false) {
+            redirect('/links/');
+        }
         $id  = $queryRes["id"];
         $link = $queryRes["link"];
         // сразу удаляем запись, которую только что извлекли
         $this->links_model->deleteLink($id);
-        $data['link'] = $link;
-        $this->load->view('links/out_link', $data);
+        $this->data['title'] = 'Окно перехода по ссылке';
+        $this->data['link'] = $link;
+        $this->load->view('links/out_link', $this->data);
     }
     public function addLinks()
     {
         $post =[];
         $links = [];
         $post = $this->input->post(null, true);
-        $_POST = null;
+        $_POST = [];
         if ($post === []) {
                 $this->viewForm();
         } elseif ($post['submit'] === 'Ввод') {
@@ -65,7 +69,8 @@ class Links extends CI_Controller
     }
     public function viewForm()
     {
-        $this->load->view('links/add_links');
+        $this->data['title'] = 'Добавить ссылки';
+        $this->load->view('links/add_links', $this->data);
     }
     private function checkAuth()
     {

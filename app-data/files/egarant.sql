@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Май 27 2018 г., 16:46
+-- Время создания: Июн 10 2018 г., 18:05
 -- Версия сервера: 5.5.50
 -- Версия PHP: 5.6.23
 
@@ -30,15 +30,7 @@ CREATE TABLE IF NOT EXISTS `egarant_links` (
   `id` int(11) NOT NULL,
   `link` varchar(255) NOT NULL,
   `addition_date` datetime NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-
---
--- Дамп данных таблицы `egarant_links`
---
-
-INSERT INTO `egarant_links` (`id`, `link`, `addition_date`) VALUES
-(2, 'https://yandex.ru/', '2018-05-27 16:43:48'),
-(3, 'https://translate.google.ru/#en/ru/salt', '2018-05-27 16:43:48');
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -49,15 +41,17 @@ INSERT INTO `egarant_links` (`id`, `link`, `addition_date`) VALUES
 CREATE TABLE IF NOT EXISTS `egarant_workers` (
   `id` int(11) NOT NULL,
   `email` varchar(50) NOT NULL,
-  `hash` varchar(100) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+  `hash` varchar(100) NOT NULL,
+  `role` varchar(16) NOT NULL DEFAULT 'User'
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8;
 
 --
 -- Дамп данных таблицы `egarant_workers`
 --
 
-INSERT INTO `egarant_workers` (`id`, `email`, `hash`) VALUES
-(4, 'user@yandex.ru', '$1$user@yan$Bqu6gO2BS4F/FZeGOG43E.');
+INSERT INTO `egarant_workers` (`id`, `email`, `hash`, `role`) VALUES
+(4, 'user@yandex.ru', '$1$user@yan$Bqu6gO2BS4F/FZeGOG43E.', 'Administrator'),
+(13, 'def@ya.ru', '$1$def@ya.r$8YM2oN1J5VbPGxNA/3SO.0', 'User');
 
 --
 -- Индексы сохранённых таблиц
@@ -83,12 +77,12 @@ ALTER TABLE `egarant_workers`
 -- AUTO_INCREMENT для таблицы `egarant_links`
 --
 ALTER TABLE `egarant_links`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT для таблицы `egarant_workers`
 --
 ALTER TABLE `egarant_workers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

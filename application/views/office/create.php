@@ -16,20 +16,23 @@
 	}
 	?>
         <?php
-        $csrf = [
-            'name' => $this->security->get_csrf_token_name(),
-            'hash' => $this->security->get_csrf_hash()
-        ];
+
         $attributes = ["method" => "GET"];
-        echo form_open('workers/index', $attributes);
+        echo form_open('office/takeCreateForm', $attributes);
         ?>
             <input class="login" type="text" name="userName" placeholder="логин" value="<?php echo $userName; ?>" required><br>
             <input class="login" type="" name="passWord" placeholder="пароль" value="<?php echo $passWord; ?>" required><br>
-            <input class="login" type="checkbox" name="remember" value="yes"> Запомнить меня<br> 
-            <input type="hidden" name="<?php echo $csrf['name'];?>" value="<?php echo $csrf['hash'];?>" />
+            <select class="login" name="role">
+                <?php foreach ($this->config->item('role') as $caption => $value): ?>
+                    <option value="<?php echo $value; ?>"><?php echo $caption; ?></option>
+                <?php endforeach; ?>
+            </select><br> 
+
 	<?php
-        echo form_submit("submit", "Вход");
+        echo form_submit("submit", "Новый пользователь");
         echo form_close(); 
         ?>
+        
 </body>
 </html>
+

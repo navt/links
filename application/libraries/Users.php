@@ -23,6 +23,13 @@ class Users
         }
         return $flag;
     }
+    public function isAdmin() {
+        $flag = false;
+        if ($this->loginFact() && $this->items['role'] === 'Administrator') {
+            $flag = true;
+        }
+        return $flag;
+    }
     public function saveItems($elements=[]) 
     {
         $this->memory->save($elements);

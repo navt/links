@@ -12,7 +12,7 @@ class Workers_model extends CI_Model
     // SELECT
     public function workersData($field='', $value='')
     {
-        $q = "SELECT `id`,`email`,`hash`
+        $q = "SELECT `id`,`email`,`hash`,`role`
             FROM `{$this->table}`
             WHERE `{$field}` = '{$value}' LIMIT 1";
         $query = $this->db->query($q);
@@ -29,11 +29,34 @@ class Workers_model extends CI_Model
         }
         return $queryRes;
     }
-    // INSERT
-    public function addWorker($userName, $hash)
+    public function allWorkers()
     {
-        $q = "INSERT INTO `{$this->table}` (`id`, `email`, `hash`) VALUES (NULL, '{$userName}',
-            '{$hash}')";
+        $q = "SELECT * FROM `{$this->table}`";
+        $query = $this->db->query($q);
+        if ($query->num_rows() > 0) {
+            $qr = $query->result_array();
+        } else {
+            $qr = false;
+        }
+        return $qr;
+    }
+    // INSERT
+    public function addWorker($userName, $hash, $role)
+    {
+        $q = "INSERT INTO `{$this->table}` (`id`, `email`, `hash`, `role`) VALUES (NULL, '{$userName}',
+            '{$hash}', '{$role}')";
+        $qr = $this->db->query($q);
+        return $qr;
+    }
+    // UPDATE
+    public function updateField($id, $field='', $value='') {
+        $q  = "UPDATE `{$this->table}` SET `{$field}` ='{$value}' WHERE `id` = {$id} ";
+        $qr = $this->db->query($q);
+        return $qr;
+    }
+    // DELETE
+    public function delete($id) {
+        $q = "DELETE FROM `{$this->table}` WHERE `id` = {$id}";
         $qr = $this->db->query($q);
         return $qr;
     }

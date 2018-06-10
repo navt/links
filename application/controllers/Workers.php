@@ -8,7 +8,7 @@ class Workers extends CI_Controller
 {
     private $user;
     private $queryRes;
-
+    public $data;
 
     public function __construct() {
         parent::__construct();
@@ -83,7 +83,8 @@ class Workers extends CI_Controller
 
     public function viewForm()
     {
-        $this->load->view('workers/login');
+        $this->data['title'] = 'Авторизация пользователя';
+        $this->load->view('workers/login', $this->data);
     }
     
     private function login($remember) {
@@ -145,52 +146,5 @@ class Workers extends CI_Controller
     	//$userName = 'w-navt@yandex.ru';
     	//$passWord = '';
     	echo genHash($userName, $passWord);
-    }
-    public function userGen($userName, $passWord)
-    {
-    	if ($this->user->loginFact() === false) {
-            redirect('/workers/viewForm/');
-    	}
-    	$noError = true;
-        $error = emailValidate($userName, true);
-        if ($error != false) {
-            $err_msg = "E-mail не прошёл проверки - {$error} ".__METHOD__;
-            $noError = false;
-        }
-        if ($noError) {
-            $qty = mb_strlen($passWord);
-            $confQty = $this->config->item('pass_length');
-            if ($qty < $confQty) {
-                $err_msg = "Длина пароля должна быть {$confQty} или более символов ".__METHOD__;
-                $noError = false;
-            }
-        }
-        if ($noError) {
-            $filter ='~^[a-zA-Z0-9_-]+$~u';
-            $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
-            if ($flag === false) {
-                $err_msg = 'Пароль должен состоять из латинских букв, цифр, - и _ . '.__METHOD__;
-                $noError = false;
-            }
-        }
-        if ($noError) {
-            $qr = $this->workers_model->workersData($userName);
-            if ($qr !== false) {
-                $err_msg = "Пользователь {$userName} уже существует ".__METHOD__;
-                $noError = false;
-            }
-        }
-        if ($noError) {
-            $hash = genHash($userName, $passWord);
-            $qr = $this->workers_model->addWorker($userName, $hash);
-            if ($qr !== true) {
-                $err_msg = 'Ошибка записи нового пользователя в БД '.__METHOD__;
-                $noError = false;
-            }
-        }
-        if ($noError === false) {
-            echo $err_msg;
-        }
-        exit('<br>'.__METHOD__.' отработал.');
     }
 }
