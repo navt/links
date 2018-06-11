@@ -1,6 +1,8 @@
 <?php
     $this->load->view('common/head-0');
 ?>
+<div class="container">
+    <div class="row header">
 	<?php if (isset($_SESSION['err_msg']) && $this->session->err_msg !=''):?>
                 <div class="error">
                     <?php echo $this->session->err_msg; deleteSI('err_msg'); ?>
@@ -20,12 +22,13 @@
         $attributes = ["method" => "GET"];
         echo form_open('office/takePasswordForm', $attributes);
         ?>
-            <input class="login" type="" name="oldPass" placeholder="прежний пароль" value="<?php echo $oldPass; ?>" required><br>
-            <input class="login" type="" name="passWord" placeholder="новый пароль" value="<?php echo $passWord; ?>" required><br> 
+            <input class="login" type="text" name="oldPass" placeholder="прежний пароль" value="<?php echo $oldPass; ?>" required><br>
+            <input class="login" type="text" name="passWord" placeholder="новый пароль" value="<?php echo $passWord; ?>" required><br> 
 	<?php
         echo form_submit("submit", "Сменить пароль");
         echo form_close(); 
         ?>
-
+    </div>
+</div>
 </body>
 </html>

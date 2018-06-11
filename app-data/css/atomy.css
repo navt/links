@@ -576,3 +576,24 @@ there.
 /* Larger than tablet */
 /* Larger than desktop */
 /* Larger than Desktop HD */
+.header {
+  margin-top: 3rem;
+  text-align: center;
+}
+.error {
+  color: red;
+  margin-bottom: 0.5rem;
+}
+.count {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: red;
+}
+.user {
+  margin-top: .6em;
+}
+.sign a {
+  font-size: 1.6em;
+  color: #1eaedb;
+  text-decoration: none;
+}
