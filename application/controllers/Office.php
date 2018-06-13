@@ -22,6 +22,37 @@ class Office extends CI_Controller
     {
         redirect('/office/viewAdminArea/');
     }
+    // показ меню/форм
+    public function viewCreateForm() 
+    {
+        $this->checkAdmin();
+        $this->data['title'] = 'Создать нового пользователя';
+        $this->load->view('office/create', $this->data);
+    }
+    public function viewPasswordForm() 
+    {
+        $this->data['title'] = 'Сменить пароль';
+        $this->data['user'] = $this->user->item('email');
+        $this->load->view('office/password', $this->data);
+    }
+    public function viewEditForm($id) 
+    {
+        $this->checkAdmin();
+        $this->data['title'] = 'Редактировать данные пользователя';
+        if (is_numeric($id) === true) {
+            $this->data['worker'] = $this->workers_model->workersData('id', $id);
+            $this->load->view('office/edit_worker', $this->data);
+        }
+    }
+    public function viewAdminArea() 
+    {
+        $this->checkAdmin();
+        $workers = $this->workers_model->allWorkers();
+        $this->data['title'] = 'Функциональность администратора';
+        $this->data['workers'] = $workers;
+        $this->load->view('office/admin_area', $this->data);
+    }
+    // приём форм
     public function takeCreateForm() 
     {
         $this->checkAdmin();
@@ -70,28 +101,12 @@ class Office extends CI_Controller
         $get = $this->input->get(null, true);
         $_GET = [];
         if ($get !== [] && $get['submit'] === 'Изменить роль') {
-            $noError = true;
-            $role = $get['role'];
-        }
-        if ($noError) {
-            if (in_array($role, $this->config->item('role'), true) === false) {
-                $this->session->err_msg = "Такой роли - {$role} нет. ".__METHOD__;
-                $noError = false;
-            } 
-        }
-        if ($noError) {
-            $qr = $this->workers_model->updateField($id, 'role', $role);
-            if ($qr === true) {
-                redirect("/office/viewEditForm/{$id}");
-            } else {
-                $this->session->err_msg = "Ошибка БД при обновлении роли. ".__METHOD__;
-                $noError = false;
-            }
-        }
-        if ($noError === false) {
+            $this->edit($id,$get);
+        } else {
             redirect('/office/viewAdminArea/');
         }
     }
+    // работа с принятыми данными и моделью
     public function delete($id) 
     {
         if ($this->user->isAdmin() === false || is_numeric($id) === false) {
@@ -157,6 +172,24 @@ class Office extends CI_Controller
             return $this;
         }
     }
+    private function edit($id, $get) {
+        $noError = true;
+        $role = $get['role'];
+        if (in_array($role, $this->config->item('role'), true) === false) {
+            $this->session->err_msg = "Такой роли - {$role} нет. ".__METHOD__;
+            $noError = false;
+        } 
+        if ($noError) {
+            $qr = $this->workers_model->updateField($id, 'role', $role);
+            if ($qr === true) {
+                redirect("/office/viewEditForm/{$id}");
+            } else {
+                $this->session->err_msg = "Ошибка БД при обновлении роли. ".__METHOD__;
+                $noError = false;
+            }
+        }
+        redirect('/office/viewAdminArea/');
+    }
     private function changePassword($oldPass, $passWord) 
     {
         $oldHesh = genHash($this->user->item('email'), $oldPass);
@@ -197,35 +230,7 @@ class Office extends CI_Controller
             return $this;
         }
     }
-    public function viewCreateForm() 
-    {
-        $this->checkAdmin();
-        $this->data['title'] = 'Создать нового пользователя';
-        $this->load->view('office/create', $this->data);
-    }
-    public function viewPasswordForm() 
-    {
-        $this->data['title'] = 'Сменить пароль';
-        $this->data['user'] = $this->user->item('email');
-        $this->load->view('office/password', $this->data);
-    }
-    public function viewEditForm($id) 
-    {
-        $this->checkAdmin();
-        $this->data['title'] = 'Редактировать данные пользователя';
-        if (is_numeric($id) === true) {
-            $this->data['worker'] = $this->workers_model->workersData('id', $id);
-            $this->load->view('office/edit_worker', $this->data);
-        }
-    }
-    public function viewAdminArea() 
-    {
-        $this->checkAdmin();
-        $workers = $this->workers_model->allWorkers();
-        $this->data['title'] = 'Функциональность администратора';
-        $this->data['workers'] = $workers;
-        $this->load->view('office/admin_area', $this->data);
-    }
+
     private function checkAuth()
     {
         $flag = $this->user->loginFact();
