@@ -66,10 +66,13 @@ class Office extends CI_Controller
 
             $this->session->userName = $userName;
             $this->session->passWord = $passWord;
-            
-            $this->create($userName, $passWord, $get['role']);
+            try {
+                $this->create($userName, $passWord, $get['role']);
+            } catch (Exception $e) {
+                $this->session->err_msg = $e->getMessage().' Код ошибки: '.$e->getCode();
+                redirect('/office/viewCreateForm/');
+            } 
             deleteSI(['userName', 'passWord']);
-            
             redirect('/office/viewAdminArea/');
         }
         redirect('/links/');
@@ -86,8 +89,14 @@ class Office extends CI_Controller
 
             $this->session->oldPass = $oldPass;
             $this->session->passWord = $passWord;
+            try {
+               $this->changePassword($oldPass, $passWord); 
+            } catch (Exception $e) {
+                $this->session->err_msg = $e->getMessage().' Код ошибки: '.$e->getCode();
+                redirect('/office/viewPasswordForm/');
+            }
+
             
-            $this->changePassword($oldPass, $passWord);
             deleteSI(['oldPass', 'passWord']);
         } 
         redirect('/links/');
@@ -101,7 +110,12 @@ class Office extends CI_Controller
         $get = $this->input->get(null, true);
         $_GET = [];
         if ($get !== [] && $get['submit'] === 'Изменить роль') {
-            $this->edit($id,$get);
+            try {
+                $this->edit($id,$get);
+            } catch (Exception $e) {
+                $this->session->err_msg = $e->getMessage().' Код ошибки: '.$e->getCode();
+                redirect('/office/viewAdminArea/');
+            }
         } else {
             redirect('/office/viewAdminArea/');
         }
@@ -122,113 +136,72 @@ class Office extends CI_Controller
     private function create($userName, $passWord, $role)
     {
     	$this->checkAdmin();
-        $noError = true;
         $error = emailValidate($userName, true);
         if ($error != false) {
-            $this->session->err_msg = "E-mail не прошёл проверки - {$error} ".__METHOD__;
-            $noError = false;
+            throw new Exception("E-mail не прошёл проверки - {$error} ", 201);
         }
-        if ($noError) {
-            $qty = mb_strlen($passWord);
-            $confQty = $this->config->item('pass_length');
-            if ($qty < $confQty) {
-                $this->session->err_msg = "Длина пароля должна быть {$confQty} или более символов ".__METHOD__;
-                $noError = false;
-            }
+        $qty = mb_strlen($passWord);
+        $confQty = $this->config->item('pass_length');
+        if ($qty < $confQty) {
+            throw new Exception("Длина пароля должна быть {$confQty} или более символов ", 202);
         }
-        if ($noError) {
-            $filter ='~^[a-zA-Z0-9_-]+$~u';
-            $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
-            if ($flag === false) {
-                $this->session->err_msg = 'Пароль должен состоять из латинских букв, цифр, - и _ . '.__METHOD__;
-                $noError = false;
-            }
+        $filter ='~^[a-zA-Z0-9_-]+$~u';
+        $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
+        if ($flag === false) {
+            throw new Exception('Пароль должен состоять из латинских букв, цифр, - и _ . ', 203);
         }
-        if ($noError) {
-            $qr = $this->workers_model->workersData('email', $userName);
-            if ($qr !== false) {
-                $this->session->err_msg = "Пользователь {$userName} уже существует ".__METHOD__;
-                $noError = false;
-            }
+        $qr = $this->workers_model->workersData('email', $userName);
+        if ($qr !== false) {
+            throw new Exception("Пользователь {$userName} уже существует ", 204);
         }
-        if ($noError) {
-            if (in_array($role, $this->config->item('role'), true) === false) {
-                $this->session->err_msg = 'Попытка записи нового пользователя в БД с неизвестной ролью '.__METHOD__;
-                $noError = false;
-            } 
+        if (in_array($role, $this->config->item('role'), true) === false) {
+            throw new Exception('Попытка записи нового пользователя в БД с неизвестной ролью ', 205);
+        } 
+        $hash = genHash($userName, $passWord);
+        $qr = $this->workers_model->addWorker($userName, $hash, $role);
+        if ($qr !== true) {
+            throw new Exception('Ошибка записи нового пользователя в БД ', 206);
         }
-        if ($noError) {
-            $hash = genHash($userName, $passWord);
-            $qr = $this->workers_model->addWorker($userName, $hash, $role);
-            if ($qr !== true) {
-                $this->session->err_msg = 'Ошибка записи нового пользователя в БД '.__METHOD__;
-                $noError = false;
-            }
-        }
-        
-        if ($noError === false) {
-            redirect('/office/viewCreateForm');
-        } else {
-            return $this;
-        }
+
+        return $this;
     }
     private function edit($id, $get) {
-        $noError = true;
         $role = $get['role'];
         if (in_array($role, $this->config->item('role'), true) === false) {
-            $this->session->err_msg = "Такой роли - {$role} нет. ".__METHOD__;
-            $noError = false;
+            throw new Exception("Такой роли - {$role} нет. ", 207);
         } 
-        if ($noError) {
-            $qr = $this->workers_model->updateField($id, 'role', $role);
-            if ($qr === true) {
-                redirect("/office/viewEditForm/{$id}");
-            } else {
-                $this->session->err_msg = "Ошибка БД при обновлении роли. ".__METHOD__;
-                $noError = false;
-            }
+        $qr = $this->workers_model->updateField($id, 'role', $role);
+        if ($qr !== true) {
+            throw new Exception("Ошибка БД при обновлении роли. ", 208);
+        } else {
+            redirect("/office/viewEditForm/{$id}");
         }
-        redirect('/office/viewAdminArea/');
     }
     private function changePassword($oldPass, $passWord) 
     {
         $oldHesh = genHash($this->user->item('email'), $oldPass);
-        $noError = true;
         // правильно ли введён старый пароль
         if ($oldHesh === $this->user->item('hash')) {
             $qty = mb_strlen($passWord);
             $confQty = $this->config->item('pass_length');
             if ($qty < $confQty) {
-                $this->session->err_msg = "Длина пароля должна быть {$confQty} или более символов ".__METHOD__;
-                $noError = false;
+                throw new Exception("Длина пароля должна быть {$confQty} или более символов ", 209);
             }
-            if ($noError) {
-                $filter ='~^[a-zA-Z0-9_-]+$~u';
-                $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
-                if ($flag === false) {
-                    $this->session->err_msg = 'Пароль должен состоять из латинских букв, цифр, - и _ . '.__METHOD__;
-                    $noError = false;
-                }
+            $filter ='~^[a-zA-Z0-9_-]+$~u';
+            $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
+            if ($flag === false) {
+                throw new Exception('Пароль должен состоять из латинских букв, цифр, - и _ . ', 210);
             }
             // если новый пароль "правильный", обновляем `hesh` в БД
-            if ($noError) {
-                $hash = genHash($this->user->item('email'), $passWord);
-                $qr = $this->workers_model->updateField($this->user->item('id'), 'hash', $hash);
-                if ($qr !== true) {
-                    $this->session->err_msg = 'Ошибка БД при обновлении нового пароля  '.__METHOD__;
-                    $noError = false;
-                }
+            $hash = genHash($this->user->item('email'), $passWord);
+            $qr = $this->workers_model->updateField($this->user->item('id'), 'hash', $hash);
+            if ($qr !== true) {
+                throw new Exception('Ошибка БД при обновлении нового пароля  ', 211);
             }
         } else {
-            $this->session->err_msg = "Прежний пароль введён неверно. ".__METHOD__;
-            $noError = false;
+            throw new Exception("Прежний пароль введён неверно. ", 212);
         }
-        // что в итоге?
-        if ($noError === false) {
-            redirect('/office/viewPasswordForm/');
-        } else {
-            return $this;
-        }
+        return $this;
     }
 
     private function checkAuth()

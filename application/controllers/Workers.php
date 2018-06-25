@@ -17,7 +17,13 @@ class Workers extends CI_Controller
         $memory = new SessionMemory();
         $this->user = new Users($memory);
     }
-
+    
+    public function viewForm()
+    {
+        $this->data['title'] = 'Авторизация пользователя';
+        $this->load->view('workers/login', $this->data);
+    }
+    
     public function index()	
     {
         $get =[];
@@ -44,47 +50,48 @@ class Workers extends CI_Controller
 
             $this->session->userName = $userName;
             $this->session->passWord = $passWord;
-
-            $error = emailValidate($userName, true);
-            if ($error != false) {
-                $this->session->err_msg = "Логин не прошёл проверки - {$error} ".__METHOD__;
+            try {
+                $this->auth($userName, $passWord);
+            } catch (Exception $e) {
+                $this->session->err_msg = $e->getMessage().' Код ошибки: '.$e->getCode();
+                // вводим задержку в 1 сек. против атаки грубой силы
                 refresh('/workers/viewForm/', 1);
             }
-            $filter ='~^[a-zA-Z0-9_-]+$~u';
-            $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
-            if ($flag === false) {
-                $this->session->err_msg = 'В пароле использован неверный набор символов . '.__METHOD__;
-                refresh('/workers/', 1);
-            }
-            // если всё прошло, то запрос к БД
-            $this->queryRes = $this->workers_model->workersData('email', $userName);
-
-            if ($this->queryRes === false) {
-                $this->session->err_msg = "Не нашлось пары (# 1) {$userName} / {$passWord} в БД. ".__METHOD__;
-                refresh('/workers/', 2);
-            } else {
-                $hash = genHash($userName, $passWord);
-                if ($hash === $this->queryRes['hash']) {
-                    // логиним этого пользователя
-                    if (isset($get['remember']) && $get['remember'] === 'yes') {
-                        $remember = true;
-                    } else {
-                        $remember = false;
-                    }
-                    $this->login($remember);
-                    redirect('/links/');
-                } else {
-                    $this->session->err_msg = "Не нашлось пары (# 2) {$userName} / {$passWord} в БД. ".__METHOD__;
-                    refresh('/workers/viewForm/', 2);
-                }
-            }
+        
         }
     }
-
-    public function viewForm()
+    
+    private function auth($userName, $passWord) 
     {
-        $this->data['title'] = 'Авторизация пользователя';
-        $this->load->view('workers/login', $this->data);
+        $error = emailValidate($userName, true);
+        if ($error != false) {
+            throw new Exception("Логин не прошёл проверки - {$error} ", 101);
+        }
+        $filter ='~^[a-zA-Z0-9_-]+$~u';
+        $flag = filter_var($passWord, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>$filter]]);
+        if ($flag === false) {
+            throw new Exception('В пароле использован неверный набор символов . ', 102);
+        }
+        // если всё прошло, то запрос к БД
+        $this->queryRes = $this->workers_model->workersData('email', $userName);
+
+        if ($this->queryRes === false) {
+            throw new Exception("Не нашлось пары (# 1) {$userName} / {$passWord} в БД. ", 103);
+        } else {
+            $hash = genHash($userName, $passWord);
+            if ($hash === $this->queryRes['hash']) {
+                // логиним этого пользователя
+                if (isset($get['remember']) && $get['remember'] === 'yes') {
+                    $remember = true;
+                } else {
+                    $remember = false;
+                }
+                $this->login($remember);
+                redirect('/links/');
+            } else {
+                throw new Exception("Не нашлось пары (# 2) {$userName} / {$passWord} в БД. ", 104);
+            }
+        }    
     }
     
     private function login($remember) {
